@@ -41,12 +41,12 @@ test(id: 99690, title: "End to End Complete") do
   #window.maximize
 
   step id: 1,
-      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: 'bbm' and password: 'bbm66m'. Click login or OK.",
+      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: '' and password: ''. Click login or OK.",
       response: "Do you see the main page with the logo Bought By Many in the top left?" do
     # *** START EDITING HERE ***
 
     # action
-    visit "https://bbm:bbm66m@stagingbymany.com/"
+    visit "https://stagingbymany.com/"
 
     # response
     expect(page).to have_selector(:css, 'span', :text => 'Bought By Many', :match => :first)
@@ -61,8 +61,9 @@ test(id: 99690, title: "End to End Complete") do
     # *** START EDITING HERE ***
 
     # action
-      #slow
-    within(:css, '.cover.sweep') do
+    scroll_offset = 500 
+    page.execute_script("window.scrollTo(0,#{scroll_offset})")
+    within(:css, '.policy:nth-child(2)') do
       page.find(:css, 'a', :text => 'Get a quote', wait: 40).click
     end
 
@@ -218,8 +219,8 @@ test(id: 99690, title: "End to End Complete") do
     # response
     expect(page).to have_no_content('What type of breed is it')
     expect(page).to have_no_selector(:css, 'mutt-help>h6')
-    sleep(2)
-    expect(page.has_checked_field?(main_pet_input[2])).to eql(true)
+    #sleep(5)
+    #expect(page.has_checked_field?(main_pet_input[2])).to eql(true)
     
     
     #page.save_screenshot('screenshot_step_10.png')
@@ -415,7 +416,6 @@ test(id: 99690, title: "End to End Complete") do
     within(:css, '.pca', :match => :first, wait: 60) do
       expect(page).to have_content(main_pet_input[9])
       suburb_list = page.all(:css, '.pcadescription', :minimum => 2, wait: 15)
-      puts suburb_list.count
       suburb = suburb_list.sample
       suburb.hover
       suburb.click
@@ -645,7 +645,7 @@ test(id: 99690, title: "End to End Complete") do
     # *** START EDITING HERE ***
 
     # action
-    expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper')
+    expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper', wait: 60)
     if !page.has_selector?(:css, '.btn.btn--secondary.btn--selected', :text => 'Monthly')
       page.click_link_or_button('Monthly')
     end
@@ -656,7 +656,7 @@ test(id: 99690, title: "End to End Complete") do
 
     # response
     expect(page).to have_content('We are creating your policy')
-    expect(page).to have_content('Check Your Email', wait: 60)
+    expect(page).to have_content('Check your email', wait: 60)
 
     #page.save_screenshot('screenshot_step_29.png')
     # *** STOP EDITING HERE ***

@@ -19,6 +19,14 @@ test(id: 96371, title: "End to End Regular") do
       :desired_capabilities => @desired_cap
     )
   end
+  Capybara.register_driver :browser_stack do |app|
+    @desired_cap = {
+      'screenResolution': "1920x1080",
+    }
+    Capybara::Selenium::Driver.new(app, 
+      :browser => :chrome,
+      :desired_capabilities => @desired_cap)
+  end 
 
   rand_num=Random.rand(899999999) + 100000000
   main_pet_input_list = [['Cat','Enya','Pedigree','White Shorthair','Current Year -5','Female','Has Not','Has Not','2360','WN','Moneyback'],
@@ -60,7 +68,10 @@ test(id: 96371, title: "End to End Regular") do
 
     # action
       #slow
-    scroll_offset = 500 
+    el = page.find(:css, '.policy:nth-child(2)')
+    page.driver.browser.execute_script("arguments[0].scrollIntoView(true);", el.native)
+    sleep(1)
+    scroll_offset = -100 
     page.execute_script("window.scrollTo(0,#{scroll_offset})")
     within(:css, '.policy:nth-child(2)') do
       page.find(:css, 'a', :text => 'Get a quote', wait: 40).click

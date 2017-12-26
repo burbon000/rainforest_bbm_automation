@@ -2,7 +2,7 @@
 # https://devbymany.com/
 
 
-test(id: 96371, title: "End to End Regular") do
+test(id: 98447, title: "Payment Test E2E CC") do
   # You can use any of the following variables in your code:
   # - []
   Capybara.register_driver :sauce do |app|
@@ -11,7 +11,7 @@ test(id: 96371, title: "End to End Regular") do
       'browserName': "firefox",
       'version': "45",
       'screenResolution': "1920x1080",
-      'name': "bbm_end_to_end_regular",
+      'name': "bbm_payment_e2e_cc",
     }
     Capybara::Selenium::Driver.new(app,
       :browser => :remote,
@@ -19,11 +19,18 @@ test(id: 96371, title: "End to End Regular") do
       :desired_capabilities => @desired_cap
     )
   end
-
+  Capybara.register_driver :browser_stack do |app|
+    @desired_cap = {
+      'screenResolution': "1920x1080",
+    }
+    Capybara::Selenium::Driver.new(app, 
+      :browser => :chrome,
+      :desired_capabilities => @desired_cap)
+  end 
   rand_num=Random.rand(899999999) + 100000000
-  main_pet_input_list = [['Cat','Enya','Pedigree','White Shorthair','Current Year -5','Female','Has Not','Has Not','2360','WN','Moneyback'],
-                    ['Cat','Cappuccino','Cross Breed','Wiener Cat','Current Year -6','Male','Has Not','Has','2370','WR','Regular'],
-                    ['Dog','Elvis','Pedigree','Aberdeen Terrier','Current Year -7','Male','Has Not','Has Not','2380','AL','Complete']]
+  main_pet_input_list = [['Cat','Enya','Pedigree','White Shorthair','Current Year -5','Female','Has Not','Has Not','2260','WN','Moneyback'],
+                    ['Cat','Cappuccino','Pedigree','Wiener Cat','Current Year -6','Male','Has Not','Has','2270','WR','Regular'],
+                    ['Dog','Elvis','Pedigree','Aberdeen Terrier','Current Year -7','Male','Has Not','Has Not','2280','AL','Complete']]
   main_pet_input = main_pet_input_list.sample
   reg_cover_input_list = [['No Excess','Add This Option','Add This Option','Add This Option','Today'],
                           ['Excess of £69 plus 20% of claims','Add This Option','Add This Option','leave as is','Today +2']]                  
@@ -31,12 +38,14 @@ test(id: 96371, title: "End to End Regular") do
   monthly_pay_input_list = [['Monthly','Successful RF','55779911','200000'],
                                 ['Monthly','Penniless RF','55779911','200000']]
   monthly_pay_input = monthly_pay_input_list.sample
-
+  yearly_pay_input_list = [['Yearly','4242 4242 4242 4242'],
+                            ['Yearly','4242 4242 4242 4242']]
+  yearly_pay_input = yearly_pay_input_list.sample
   rand_fName = ('a'..'z').to_a.shuffle[0,8].join
   rand_lName = ('a'..'z').to_a.shuffle[0,8].join
 
   window = Capybara.current_session.driver.browser.manage.window
-  #window.maximize
+  window.maximize
 
   step id: 1,
       action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: '' and password: ''. Click login or OK.",
@@ -59,8 +68,10 @@ test(id: 96371, title: "End to End Regular") do
     # *** START EDITING HERE ***
 
     # action
-      #slow
-    scroll_offset = 500 
+    el = page.find(:css, '.policy:nth-child(2)')
+    page.driver.browser.execute_script("arguments[0].scrollIntoView(true);", el.native)
+    sleep(1)
+    scroll_offset = -100 
     page.execute_script("window.scrollTo(0,#{scroll_offset})")
     within(:css, '.policy:nth-child(2)') do
       page.find(:css, 'a', :text => 'Get a quote', wait: 40).click
@@ -82,11 +93,11 @@ test(id: 96371, title: "End to End Regular") do
     # action
     page.fill_in 'email', with: rand_fName+'_'+rand_lName+'@nowhere.com'
     page.fill_in 'full_name', with: rand_fName + ' ' + rand_lName
-    page.click_link_or_button('Next ›')
+    page.click_link_or_button('Next')
 
     # response
     expect(page).to have_content('Your password')
-  
+	
     #page.save_screenshot('screenshot_step_3.png')
     # *** STOP EDITING HERE ***
   end
@@ -115,7 +126,7 @@ test(id: 96371, title: "End to End Regular") do
       response: "Do you see 'I have a dog called _' on the page?" do
    
     # *** START EDITING HERE ***
-     
+	   
     # action
     within(:css, '.splash.fullheight') do
       page.find(:css, "a[class='btn']", :text => "Let's get started").click
@@ -399,7 +410,15 @@ test(id: 96371, title: "End to End Regular") do
       page.find(:css, '.mutt-natural-trigger').click
     end
     expect(page).to have_content('How much did you pay for your pet?')
+
     page.fill_in 'value', with: main_pet_input[8]
+    #page.find(:css, "input[name='value']").send_keys(main_pet_input[8][1])
+    #sleep(1)
+    #page.find(:css, "input[name='value']").send_keys(main_pet_input[8][1])
+    #sleep(1)
+    #page.find(:css, "input[name='value']").send_keys(main_pet_input[8][1])
+    #sleep(1)
+    #page.find(:css, "input[name='value']").send_keys(main_pet_input[8][1])
     page.click_link_or_button('Done')
     expect(page).to have_content('I paid £' + main_pet_input[8])
     within(:css, '#insured_entities_1_pet_address_postcode') do
@@ -518,6 +537,12 @@ test(id: 96371, title: "End to End Regular") do
     # *** START EDITING HERE ***
 
     # action
+    scroll_offset = 0
+    for i in 1..2 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     page.click_link_or_button('Show me all policies')
      
     # response
@@ -546,7 +571,7 @@ test(id: 96371, title: "End to End Regular") do
     expect(page).to have_content('Here are the optional additions to this policy')
 
 
-    page.save_screenshot('screenshot_step_23.png')
+    #page.save_screenshot('screenshot_step_23.png')
     # *** STOP EDITING HERE ***
   end
 
@@ -559,19 +584,26 @@ test(id: 96371, title: "End to End Regular") do
     # *** START EDITING HERE ***
 
     # action
+
     if reg_cover_input[1] == 'Add This Option'
       within(:css, '.product-addons__item', :text => 'Pass Away Cover') do
         page.find(:css, 'a', :text => 'Add this option').click
         expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
       end
     end
-    if reg_cover_input[2] == 'Add This Option'
+    if reg_cover_input[3] == 'Add This Option'
       within(:css, '.product-addons__item', :text => 'Theft Loss Cover') do
         page.find(:css, 'a', :text => 'Add this option').click
         expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
       end
     end
-    if reg_cover_input[3] == 'Add This Option'
+    scroll_offset = 0
+    for i in 1..2 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
+    if reg_cover_input[2] == 'Add This Option'
       within(:css, '.product-addons__item', :text => 'Travel Cover') do
         page.find(:css, 'a', :text => 'Add this option').click
         expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
@@ -585,9 +617,9 @@ test(id: 96371, title: "End to End Regular") do
     end
 
     # response
-    expect(page).to have_content('Personal details')
+    expect(page).to have_content('Personal details', wait: 60)
 
-    page.save_screenshot('screenshot_step_24.png')
+    #page.save_screenshot('screenshot_step_24.png')
     # *** STOP EDITING HERE ***
   end
 
@@ -600,7 +632,7 @@ test(id: 96371, title: "End to End Regular") do
     day = Random.rand(1...28).to_s
     month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].sample
     year = (2017 - Random.rand(20...58)).to_s
-    telephone = '111' + Random.rand(10000000..99999999).to_s
+    telephone = '11100000' + Random.rand(4..9).to_s + Random.rand(4..9).to_s + Random.rand(4..9).to_s
 
     # action
     within(:css, '#policy_holders_1_title') do
@@ -643,11 +675,11 @@ test(id: 96371, title: "End to End Regular") do
     page.click_link_or_button('Continue')
 
     # response
-    expect(page).to have_content('Summary')
+    expect(page).to have_content('Summary', wait: 60)
     expect(page).to have_content(main_pet_input[1] + "'s policy")
     
 
-    page.save_screenshot('screenshot_step_25.png')
+    #page.save_screenshot('screenshot_step_25.png')
     # *** STOP EDITING HERE ***
   end
 
@@ -665,7 +697,7 @@ test(id: 96371, title: "End to End Regular") do
       expect(page).to have_content(reg_cover_input[0])
     end
 
-    page.save_screenshot('screenshot_step_26.png')
+    #page.save_screenshot('screenshot_step_26.png')
     # *** STOP EDITING HERE ***
   end
 
@@ -680,21 +712,23 @@ test(id: 96371, title: "End to End Regular") do
     # *** START EDITING HERE ***
 
     # action
+      #no action
+
+    # response
     if (reg_cover_input[1] == 'Add This Option') or (reg_cover_input[2] == 'Add This Option') or (reg_cover_input[3] == 'Add This Option')
       expect(page).to have_content('Included options')
       if reg_cover_input[1] == 'Add This Option'
         expect(page).to have_content('Pass Away Cover')
       end
-      if reg_cover_input[2] == 'Add This Option'
+      if reg_cover_input[3] == 'Add This Option'
         expect(page).to have_content('Theft Loss Cover')
       end
-      if reg_cover_input[3] == 'Add This Option'
+      if reg_cover_input[2] == 'Add This Option'
         expect(page).to have_content('Travel Cover')
       end
     end
-    # response
 
-    page.save_screenshot('screenshot_step_27.png')
+    #page.save_screenshot('screenshot_step_27.png')
     # *** STOP EDITING HERE ***
   end
 
@@ -706,46 +740,75 @@ test(id: 96371, title: "End to End Regular") do
     # *** START EDITING HERE ***
 
     # action
+    scroll_offset = 0
+    for i in 1..3 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     page.click_link_or_button('Tomorrow')
     expect(page).to have_selector(:css, '.btn.btn--secondary.btn--selected', :text => 'Tomorrow')
     page.click_link_or_button('Continue')
     expect(page).to have_content('I agree to the terms and conditions')
-    #sleep(15)
+    scroll_offset = 0
+    for i in 1..5 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
+    #page.find(:css, '#policy_holders_1_agree_terms-checkbox').click
     page.find(:css, '.mutt-label').click
     expect(page).to have_selector(:css, ".mutt-label.mutt-field-checkbox-checked")
     page.click_link_or_button('I Agree')
 
     # response
-    expect(page).to have_content('Payment')
+    expect(page).to have_content('Payment', wait: 60)
     
 
-    page.save_screenshot('screenshot_step_28.png')
+    #page.save_screenshot('screenshot_step_28.png')
     # *** STOP EDITING HERE ***
   end
 
-  step id: 29,
-      action: "Select {{Monthly_Payment.method}} (this may already be selected). Scroll down and enter Account Name:"\
-              " {{Monthly_Payment.account_name}}, Account Number: {{Monthly_Payment.account_number}}, Sort Code: {{Monthly_Payment.sort_code}}."\
-              " Scroll down and click Continue and pay.",
+    step id: 29,
+      action: "Select {{Yearly_Payment.method}}, select Continue and Pay and enter {{Yearly_Payment.card_number}}, any Expiry Date"\
+              " in the Future and any CVC Code, then select Pay",
       response: "Did the 'We are creating your policy' page appear followed by a redirect to a page that says Check Your Email ?" do
 
     # *** START EDITING HERE ***
 
     # action
     expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper')
-    if !page.has_selector?(:css, '.btn.btn--secondary.btn--selected', :text => 'Monthly')
-      page.click_link_or_button('Monthly')
+    expect(page).to have_selector(:css, '.btn.btn--secondary.btn--selected', :text => 'Monthly')
+    expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper')
+    page.find(:css, '.btn.btn--secondary', :text => 'Yearly', wait: 60).click
+    expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper')
+    scroll_offset = 0
+    for i in 1..3 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
     end
-    page.fill_in 'direct_debit_account_name', with: monthly_pay_input[1]
-    page.fill_in 'direct_debit_account_number', with: monthly_pay_input[2]
-    page.fill_in 'direct_debit_sort_code', with: monthly_pay_input[3]
-    page.click_link_or_button('Continue and pay')
+    page.find(:css, 'button', :text => 'Continue and pay', wait: 60).click
+    
+    within_frame(find(:css, "iframe[class='stripe_checkout_app']")) do
+      page.find(:css, "input[placeholder='Card number']").send_keys('4242424242424242')
+      #wait until visa icon shows up
+      sleep(1)
+      page.find(:css, "input[placeholder='MM / YY']").send_keys('01')
+      sleep(1)
+      page.find(:css, "input[placeholder='MM / YY']").send_keys('21')
+      sleep(1)
+      page.find(:css, "input[placeholder='CVC']").send_keys('122')
+      sleep(1)
+      page.find(:css, 'button', :text => 'Pay').click
+    end
+
 
     # response
     expect(page).to have_content('We are creating your policy')
-    expect(page).to have_content('Check your email', wait: 60)
+    expect(page).to have_content('Check Your Email', wait: 60)
 
-    page.save_screenshot('screenshot_step_29.png')
+    #page.save_screenshot('screenshot_step_29.png')
     # *** STOP EDITING HERE ***
   end
 

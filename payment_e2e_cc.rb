@@ -21,9 +21,9 @@ test(id: 98447, title: "Payment Test E2E CC") do
   end
 
   rand_num=Random.rand(899999999) + 100000000
-  main_pet_input_list = [['Cat','Enya','Pedigree','White Shorthair','Current Year -5','Female','Has Not','Has Not','2360','WN','Moneyback'],
-                    ['Cat','Cappuccino','Pedigree','Wiener Cat','Current Year -6','Male','Has Not','Has','2370','WR','Regular'],
-                    ['Dog','Elvis','Pedigree','Aberdeen Terrier','Current Year -7','Male','Has Not','Has Not','2380','AL','Complete']]
+  main_pet_input_list = [['Cat','Enya','Pedigree','White Shorthair','Current Year -5','Female','Has Not','Has Not','2260','WN','Moneyback'],
+                    ['Cat','Cappuccino','Pedigree','Wiener Cat','Current Year -6','Male','Has Not','Has','2270','WR','Regular'],
+                    ['Dog','Elvis','Pedigree','Aberdeen Terrier','Current Year -7','Male','Has Not','Has Not','2280','AL','Complete']]
   main_pet_input = main_pet_input_list.sample
   reg_cover_input_list = [['No Excess','Add This Option','Add This Option','Add This Option','Today'],
                           ['Excess of £69 plus 20% of claims','Add This Option','Add This Option','leave as is','Today +2']]                  
@@ -37,16 +37,16 @@ test(id: 98447, title: "Payment Test E2E CC") do
   rand_fName = ('a'..'z').to_a.shuffle[0,8].join
   rand_lName = ('a'..'z').to_a.shuffle[0,8].join
 
-  window = Capybara.current_session.driver.browser.manage.window
+  #window = Capybara.current_session.driver.browser.manage.window
   #window.maximize
 
   step id: 1,
-      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: 'bbm' and password: 'bbm66m'. Click login or OK.",
+      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: '' and password: ''. Click login or OK.",
       response: "Do you see the main page with the logo Bought By Many in the top left?" do
     # *** START EDITING HERE ***
 
     # action
-    visit "https://bbm:bbm66m@stagingbymany.com/"
+    visit "https://stagingbymany.com/"
 
     # response
     expect(page).to have_selector(:css, 'span', :text => 'Bought By Many', :match => :first)
@@ -61,8 +61,13 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # *** START EDITING HERE ***
 
     # action
-    #slow
-    within(:css, '.cover.sweep') do
+      #slow
+    #el = page.find(:css, '.policy:nth-child(2)')
+    #page.driver.browser.execute_script("arguments[0].scrollIntoView(true);", el.native)
+    #puts 'here'
+    scroll_offset = 500 
+    page.execute_script("window.scrollTo(0,#{scroll_offset})")
+    within(:css, '.policy:nth-child(2)') do
       page.find(:css, 'a', :text => 'Get a quote', wait: 40).click
     end
 
@@ -82,7 +87,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # action
     page.fill_in 'email', with: rand_fName+'_'+rand_lName+'@nowhere.com'
     page.fill_in 'full_name', with: rand_fName + ' ' + rand_lName
-    page.click_link_or_button('Next ›')
+    page.click_link_or_button('Next')
 
     # response
     expect(page).to have_content('Your password')
@@ -218,8 +223,8 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # response
     expect(page).to have_no_content('What type of breed is it')
     expect(page).to have_no_selector(:css, 'mutt-help>h6')
-    sleep(2)
-    expect(page.has_checked_field?(main_pet_input[2])).to eql(true)
+    #sleep(5)
+    #expect(page.has_checked_field?(main_pet_input[2])).to eql(true)
     
     
     #page.save_screenshot('screenshot_step_10.png')
@@ -399,6 +404,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
       page.find(:css, '.mutt-natural-trigger').click
     end
     expect(page).to have_content('How much did you pay for your pet?')
+
     page.fill_in 'value', with: main_pet_input[8]
     page.click_link_or_button('Done')
     expect(page).to have_content('I paid £' + main_pet_input[8])
@@ -415,7 +421,6 @@ test(id: 98447, title: "Payment Test E2E CC") do
     within(:css, '.pca', :match => :first, wait: 60) do
       expect(page).to have_content(main_pet_input[9])
       suburb_list = page.all(:css, '.pcadescription', :minimum => 2, wait: 15)
-      puts suburb_list.count
       suburb = suburb_list.sample
       suburb.hover
       suburb.click
@@ -519,6 +524,8 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # *** START EDITING HERE ***
 
     # action
+    scroll_offset = 2000 
+    page.execute_script("window.scrollTo(0,#{scroll_offset})")
     page.click_link_or_button('Show me all policies')
      
     # response
@@ -560,19 +567,22 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # *** START EDITING HERE ***
 
     # action
+
     if reg_cover_input[1] == 'Add This Option'
       within(:css, '.product-addons__item', :text => 'Pass Away Cover') do
         page.find(:css, 'a', :text => 'Add this option').click
         expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
       end
     end
-    if reg_cover_input[2] == 'Add This Option'
+    if reg_cover_input[3] == 'Add This Option'
       within(:css, '.product-addons__item', :text => 'Theft Loss Cover') do
         page.find(:css, 'a', :text => 'Add this option').click
         expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
       end
     end
-    if reg_cover_input[3] == 'Add This Option'
+    scroll_offset = 2000
+    page.execute_script("window.scrollTo(0,#{scroll_offset})")
+    if reg_cover_input[2] == 'Add This Option'
       within(:css, '.product-addons__item', :text => 'Travel Cover') do
         page.find(:css, 'a', :text => 'Add this option').click
         expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
@@ -586,7 +596,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
     end
 
     # response
-    expect(page).to have_content('Personal details')
+    expect(page).to have_content('Personal details', wait: 60)
 
     #page.save_screenshot('screenshot_step_24.png')
     # *** STOP EDITING HERE ***
@@ -601,7 +611,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
     day = Random.rand(1...28).to_s
     month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].sample
     year = (2017 - Random.rand(20...58)).to_s
-    telephone = '111' + Random.rand(10000000..99999999).to_s
+    telephone = '11100000' + Random.rand(4..9).to_s + Random.rand(4..9).to_s + Random.rand(4..9).to_s
 
     # action
     within(:css, '#policy_holders_1_title') do
@@ -644,7 +654,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
     page.click_link_or_button('Continue')
 
     # response
-    expect(page).to have_content('Summary')
+    expect(page).to have_content('Summary', wait: 60)
     expect(page).to have_content(main_pet_input[1] + "'s policy")
     
 
@@ -689,10 +699,10 @@ test(id: 98447, title: "Payment Test E2E CC") do
       if reg_cover_input[1] == 'Add This Option'
         expect(page).to have_content('Pass Away Cover')
       end
-      if reg_cover_input[2] == 'Add This Option'
+      if reg_cover_input[3] == 'Add This Option'
         expect(page).to have_content('Theft Loss Cover')
       end
-      if reg_cover_input[3] == 'Add This Option'
+      if reg_cover_input[2] == 'Add This Option'
         expect(page).to have_content('Travel Cover')
       end
     end
@@ -709,16 +719,22 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # *** START EDITING HERE ***
 
     # action
+    scroll_offset = 2000
+    page.execute_script("window.scrollTo(0,#{scroll_offset})")
     page.click_link_or_button('Tomorrow')
     expect(page).to have_selector(:css, '.btn.btn--secondary.btn--selected', :text => 'Tomorrow')
     page.click_link_or_button('Continue')
     expect(page).to have_content('I agree to the terms and conditions')
+    scroll_offset = 0
+    scroll_offset = 2000
+    page.execute_script("window.scrollTo(0,#{scroll_offset})")
+    #page.find(:css, '#policy_holders_1_agree_terms-checkbox').click
     page.find(:css, '.mutt-label').click
     expect(page).to have_selector(:css, ".mutt-label.mutt-field-checkbox-checked")
     page.click_link_or_button('I Agree')
 
     # response
-    expect(page).to have_content('Payment')
+    expect(page).to have_content('Payment', wait: 60)
     
 
     #page.save_screenshot('screenshot_step_28.png')
@@ -738,6 +754,8 @@ test(id: 98447, title: "Payment Test E2E CC") do
     expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper')
     page.find(:css, '.btn.btn--secondary', :text => 'Yearly', wait: 60).click
     expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper')
+    scroll_offset = 2000
+    page.execute_script("window.scrollTo(0,#{scroll_offset})")
     page.find(:css, 'button', :text => 'Continue and pay', wait: 60).click
     
     within_frame(find(:css, "iframe[class='stripe_checkout_app']")) do
@@ -748,7 +766,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
       sleep(1)
       page.find(:css, "input[placeholder='MM / YY']").send_keys('21')
       sleep(1)
-      page.find(:css, "input[placeholder='CVC']").send_keys('123')
+      page.find(:css, "input[placeholder='CVC']").send_keys('122')
       sleep(1)
       page.find(:css, 'button', :text => 'Pay').click
     end
@@ -756,7 +774,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
 
     # response
     expect(page).to have_content('We are creating your policy')
-    expect(page).to have_content('Check Your Email', wait: 60)
+    expect(page).to have_content('Check your email', wait: 60)
 
     #page.save_screenshot('screenshot_step_29.png')
     # *** STOP EDITING HERE ***

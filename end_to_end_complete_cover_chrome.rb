@@ -2,7 +2,7 @@
 # https://devbymany.com/
 
 
-test(id: 96371, title: "End to End Regular") do
+test(id: 99690, title: "End to End Complete") do
   # You can use any of the following variables in your code:
   # - []
   Capybara.register_driver :sauce do |app|
@@ -11,7 +11,7 @@ test(id: 96371, title: "End to End Regular") do
       'browserName': "firefox",
       'version': "45",
       'screenResolution': "1920x1080",
-      'name': "bbm_end_to_end_regular",
+      'name': "bbm_end_to_end_complete",
     }
     Capybara::Selenium::Driver.new(app,
       :browser => :remote,
@@ -19,6 +19,14 @@ test(id: 96371, title: "End to End Regular") do
       :desired_capabilities => @desired_cap
     )
   end
+  Capybara.register_driver :browser_stack do |app|
+    @desired_cap = {
+      'screenResolution': "1920x1080",
+    }
+    Capybara::Selenium::Driver.new(app, 
+      :browser => :chrome,
+      :desired_capabilities => @desired_cap)
+  end 
 
   rand_num=Random.rand(899999999) + 100000000
   main_pet_input_list = [['Cat','Enya','Pedigree','White Shorthair','Current Year -5','Female','Has Not','Has Not','2360','WN','Moneyback'],
@@ -31,7 +39,9 @@ test(id: 96371, title: "End to End Regular") do
   monthly_pay_input_list = [['Monthly','Successful RF','55779911','200000'],
                                 ['Monthly','Penniless RF','55779911','200000']]
   monthly_pay_input = monthly_pay_input_list.sample
-
+  fixed_cover_input_list = [['Current Year','Excess of £69 plus 0% of claims'],
+                            ['Current Year -1','Excess of £69 plus 20% of claims']]
+  fixed_cover_input = fixed_cover_input_list.sample
   rand_fName = ('a'..'z').to_a.shuffle[0,8].join
   rand_lName = ('a'..'z').to_a.shuffle[0,8].join
 
@@ -59,8 +69,10 @@ test(id: 96371, title: "End to End Regular") do
     # *** START EDITING HERE ***
 
     # action
-      #slow
-    scroll_offset = 500 
+    el = page.find(:css, '.policy:nth-child(2)')
+    page.driver.browser.execute_script("arguments[0].scrollIntoView(true);", el.native)
+    sleep(1)
+    scroll_offset = -100 
     page.execute_script("window.scrollTo(0,#{scroll_offset})")
     within(:css, '.policy:nth-child(2)') do
       page.find(:css, 'a', :text => 'Get a quote', wait: 40).click
@@ -531,63 +543,22 @@ test(id: 96371, title: "End to End Regular") do
   end
 
     step id: 23,
-      action: "Look for the 'Regular' policy. Click the option for {{Regular_Cover.excess}}. Click Select.",
-      response: "Are you taken to a page with a title that includes Optional additions to this policy ?" do
+      action: "Look for the 'Complete' policy. Click on the option for {{Fixed_Cover.excess}}. Click Select.",
+      response: "Are you taken to a page with Personal Details Name Fields?" do
 
     # *** START EDITING HERE ***
 
     # action
-    within(:css, '.product-option.flow', :text => 'Regular') do
-      page.choose(reg_cover_input[0])
+    within(:css, '.product-option.flow', :text => 'Complete') do
+      page.choose(fixed_cover_input[1])
       page.click_link_or_button('Select')
-    end
-
-    # response
-    expect(page).to have_content('Here are the optional additions to this policy')
-
-
-    page.save_screenshot('screenshot_step_23.png')
-    # *** STOP EDITING HERE ***
-  end
-
-    step id: 24,
-      action: "View the page. For Add Pass Away Cover Click choose to {{Regular_Cover.pass_away_cover}}, for Add Theft Loss Cover"\
-              " choose to {{Regular_Cover.theft_loss_cover}}, for Add Travel Cover choose to {{Regular_Cover.travel_cover}}. 'leave"\
-              " as is' means do not do anything. Click Continue.",
-      response: "Are you taken to the Personal Details page?" do
-
-    # *** START EDITING HERE ***
-
-    # action
-    if reg_cover_input[1] == 'Add This Option'
-      within(:css, '.product-addons__item', :text => 'Pass Away Cover') do
-        page.find(:css, 'a', :text => 'Add this option').click
-        expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
-      end
-    end
-    if reg_cover_input[2] == 'Add This Option'
-      within(:css, '.product-addons__item', :text => 'Theft Loss Cover') do
-        page.find(:css, 'a', :text => 'Add this option').click
-        expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
-      end
-    end
-    if reg_cover_input[3] == 'Add This Option'
-      within(:css, '.product-addons__item', :text => 'Travel Cover') do
-        page.find(:css, 'a', :text => 'Add this option').click
-        expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
-      end
-    end
-    page.click_link_or_button('Continue')
-    if page.has_selector?('.alert')
-      within(:css, '.alert') do
-        page.find(:css, 'a', :text => 'Select this policy')
-      end
     end
 
     # response
     expect(page).to have_content('Personal details')
 
-    page.save_screenshot('screenshot_step_24.png')
+
+    #page.save_screenshot('screenshot_step_23.png')
     # *** STOP EDITING HERE ***
   end
 
@@ -647,56 +618,10 @@ test(id: 96371, title: "End to End Regular") do
     expect(page).to have_content(main_pet_input[1] + "'s policy")
     
 
-    page.save_screenshot('screenshot_step_25.png')
+    #page.save_screenshot('screenshot_step_25.png')
     # *** STOP EDITING HERE ***
   end
 
-    step id: 26,
-      action: "Look for the section titled {{Main_Pet_Input.pet_name}}'s Policy.",
-      response: "Do you see Regular and {{Regular_Cover.excess}}?" do
-    # *** START EDITING HERE ***
-
-    # action
-      # no action
-
-    # response
-    within(:css, '.product-option') do
-      expect(page).to have_content('Regular')
-      expect(page).to have_content(reg_cover_input[0])
-    end
-
-    page.save_screenshot('screenshot_step_26.png')
-    # *** STOP EDITING HERE ***
-  end
-
-    step id: 27,
-      action: "Look under Included options section. (You will not see this section if all options chosen in the previous step "\
-              "were 'leave as is')",
-      response: "Under included options, do you ONLY see options that you chose Add this option in the previous step: Pass Away"\
-                " Cover ({{Regular_Cover.pass_away_cover}}), Theft Loss Cover ({{Regular_Cover.theft_loss_cover}}), Travel Cover"\
-                " ({{Regular_Cover.travel_cover}})? If all options are 'leave as is' then you will NOT see this section and you can"\
-                " continue with the test." do
-
-    # *** START EDITING HERE ***
-
-    # action
-    if (reg_cover_input[1] == 'Add This Option') or (reg_cover_input[2] == 'Add This Option') or (reg_cover_input[3] == 'Add This Option')
-      expect(page).to have_content('Included options')
-      if reg_cover_input[1] == 'Add This Option'
-        expect(page).to have_content('Pass Away Cover')
-      end
-      if reg_cover_input[2] == 'Add This Option'
-        expect(page).to have_content('Theft Loss Cover')
-      end
-      if reg_cover_input[3] == 'Add This Option'
-        expect(page).to have_content('Travel Cover')
-      end
-    end
-    # response
-
-    page.save_screenshot('screenshot_step_27.png')
-    # *** STOP EDITING HERE ***
-  end
 
     step id: 28,
       action: "Scroll down. Select the policy start date as Tomorrow. Click Continue. Scroll down and click on the button for I"\
@@ -710,7 +635,6 @@ test(id: 96371, title: "End to End Regular") do
     expect(page).to have_selector(:css, '.btn.btn--secondary.btn--selected', :text => 'Tomorrow')
     page.click_link_or_button('Continue')
     expect(page).to have_content('I agree to the terms and conditions')
-    #sleep(15)
     page.find(:css, '.mutt-label').click
     expect(page).to have_selector(:css, ".mutt-label.mutt-field-checkbox-checked")
     page.click_link_or_button('I Agree')
@@ -719,11 +643,11 @@ test(id: 96371, title: "End to End Regular") do
     expect(page).to have_content('Payment')
     
 
-    page.save_screenshot('screenshot_step_28.png')
+    #page.save_screenshot('screenshot_step_28.png')
     # *** STOP EDITING HERE ***
   end
 
-  step id: 29,
+    step id: 29,
       action: "Select {{Monthly_Payment.method}} (this may already be selected). Scroll down and enter Account Name:"\
               " {{Monthly_Payment.account_name}}, Account Number: {{Monthly_Payment.account_number}}, Sort Code: {{Monthly_Payment.sort_code}}."\
               " Scroll down and click Continue and pay.",
@@ -732,7 +656,7 @@ test(id: 96371, title: "End to End Regular") do
     # *** START EDITING HERE ***
 
     # action
-    expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper')
+    expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper', wait: 60)
     if !page.has_selector?(:css, '.btn.btn--secondary.btn--selected', :text => 'Monthly')
       page.click_link_or_button('Monthly')
     end
@@ -745,7 +669,7 @@ test(id: 96371, title: "End to End Regular") do
     expect(page).to have_content('We are creating your policy')
     expect(page).to have_content('Check your email', wait: 60)
 
-    page.save_screenshot('screenshot_step_29.png')
+    #page.save_screenshot('screenshot_step_29.png')
     # *** STOP EDITING HERE ***
   end
 
