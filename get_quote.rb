@@ -1,10 +1,12 @@
 #tester starts at 
 # https://devbymany.com/
+# NOTES: Chrome working with this site has an issue with the £ symbol and the number 3. This is a regional keyboard issue that I 
+# => did not solve yet.
 
-
-test(id: 99690, title: "End to End Complete") do
+test(id: 99691, title: "End to End Complete") do
   # You can use any of the following variables in your code:
   # - []
+  # used to run Saucelabs with version 45 of Firefox. Version 50 was causing problems with some functionality
   Capybara.register_driver :sauce do |app|
     @desired_cap = {
       'platform': "Windows 7",
@@ -15,20 +17,17 @@ test(id: 99690, title: "End to End Complete") do
     }
     Capybara::Selenium::Driver.new(app,
       :browser => :remote,
-      :url => 'http://RFAutomation:5328f84f-5623-41ba-a81e-b5daff615024@ondemand.saucelabs.com:80/wd/hub',
+      :url => 'http://@ondemand.saucelabs.com:80/wd/hub',
       :desired_capabilities => @desired_cap
     )
   end
-  Capybara.register_driver :browser_stack do |app|
-    @desired_cap = {
-      'screenResolution': "1920x1080",
-    }
+  # chrome testing
+  Capybara.register_driver :selenium do |app|
     Capybara::Selenium::Driver.new(app, 
-      :browser => :chrome,
-      :desired_capabilities => @desired_cap)
+      :browser => :chrome)
   end 
 
-  rand_num=Random.rand(899999999) + 100000000
+  
   main_pet_input_list = [['Cat','Enya','Pedigree','White Shorthair','Current Year -5','Female','Has Not','Has Not','2360','WN','Moneyback'],
                     ['Cat','Cappuccino','Cross Breed','Wiener Cat','Current Year -6','Male','Has Not','Has','2370','WR','Regular'],
                     ['Dog','Elvis','Pedigree','Aberdeen Terrier','Current Year -7','Male','Has Not','Has Not','2380','AL','Complete']]
@@ -45,17 +44,15 @@ test(id: 99690, title: "End to End Complete") do
   rand_fName = ('a'..'z').to_a.shuffle[0,8].join
   rand_lName = ('a'..'z').to_a.shuffle[0,8].join
 
-  window = Capybara.current_session.driver.browser.manage.window
-  #window.maximize
 
   step id: 1,
-      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: '' and password: ''. Click login or OK.",
+      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: 'bbm' and password: 'bbm66m'. Click login or OK.",
       response: "Do you see the main page with the logo Bought By Many in the top left?" do
     # *** START EDITING HERE ***
 
     # action
-    visit "https://stagingbymany.com/"
-
+      # need to enter username and password
+    visit "https://XXXXXXXX@stagingbymany.com/"
     # response
     expect(page).to have_selector(:css, 'span', :text => 'Bought By Many', :match => :first)
 
@@ -69,9 +66,9 @@ test(id: 99690, title: "End to End Complete") do
     # *** START EDITING HERE ***
 
     # action
+      # chrome requires object to be in view so scroll to object
     el = page.find(:css, '.policy:nth-child(2)')
     page.driver.browser.execute_script("arguments[0].scrollIntoView(true);", el.native)
-    sleep(1)
     scroll_offset = -100 
     page.execute_script("window.scrollTo(0,#{scroll_offset})")
     within(:css, '.policy:nth-child(2)') do
@@ -230,7 +227,7 @@ test(id: 99690, title: "End to End Complete") do
     # response
     expect(page).to have_no_content('What type of breed is it')
     expect(page).to have_no_selector(:css, 'mutt-help>h6')
-    #sleep(5)
+    # verification that field is checked not working
     #expect(page.has_checked_field?(main_pet_input[2])).to eql(true)
     
     
@@ -248,6 +245,7 @@ test(id: 99690, title: "End to End Complete") do
     # *** START EDITING HERE ***
 
     # action
+      # enter breed, one character at a time to allow system to catch up with populating breed list
     within(:css, '#insured_entities_1_breed') do
       page.find(:css, '.mutt-natural-autocomplete').click
       for x in 0..main_pet_input[3].length do
@@ -256,7 +254,7 @@ test(id: 99690, title: "End to End Complete") do
       within(:css, '.mutt-autocomplete-dropdown__list', wait: 30) do
         expect(page).to have_content(main_pet_input[3])
       end
-      sleep(1)
+      sleep(2) # system is occassionally too slow in populating breed list so this reduces liklihook of mismatch
       page.find(:css, 'li', :text => main_pet_input[3], :match => :first).hover
       page.find(:css, 'li', :text => main_pet_input[3], :match => :first).click
       expect(page).to have_no_selector(:css, 'li', :text => main_pet_input[3])
@@ -407,6 +405,7 @@ test(id: 99690, title: "End to End Complete") do
     # *** START EDITING HERE ***
 
     # action
+      # enter pet price
     within(:css, '#insured_entities_1_value') do
       page.find(:css, '.mutt-natural-trigger').click
     end
@@ -414,6 +413,8 @@ test(id: 99690, title: "End to End Complete") do
     page.fill_in 'value', with: main_pet_input[8]
     page.click_link_or_button('Done')
     expect(page).to have_content('I paid £' + main_pet_input[8])
+
+    # enter pet address
     within(:css, '#insured_entities_1_pet_address_postcode') do
       page.find(:css, '.mutt-natural-trigger').click
     end
@@ -426,10 +427,12 @@ test(id: 99690, title: "End to End Complete") do
     expect(page).to have_content(main_pet_input[9])
     within(:css, '.pca', :match => :first, wait: 60) do
       expect(page).to have_content(main_pet_input[9])
+      # grab list of postal codes/suburbs and select random
       suburb_list = page.all(:css, '.pcadescription', :minimum => 2, wait: 15)
       suburb = suburb_list.sample
       suburb.hover
       suburb.click
+      # grab list of addresses and select random from first 6
       address_list = page.all(:css, "div[class*='pcaitem'][title^='#{main_pet_input[9]}']", :minimum => 1, wait: 15)
       address = address_list[0..6].sample
       address.hover
@@ -454,34 +457,18 @@ test(id: 99690, title: "End to End Complete") do
       response: "Did the photo upload and is it visible on page?" do
 
     # *** START EDITING HERE ***
-    #file_path = Dir.pwd + '/' + main_pet_input[0] + '.jpg'
 
     # action
     within(:css, '#insured_entities_1_pet_address_postcode') do
       page.click_link_or_button('Done', wait: 30)
     end
     expect(page).to have_content('I paid £' + main_pet_input[8])
-    #Capybara.ignore_hidden_elements = false
-
-    #page.execute_script("$('.upload__button.file-input-button-0').show();")
-    #page.execute_script("$('.upload__button.file-input-button-0').trigger('change');")
-    #page.find(:css, '.upload__button.file-input-button-0').trigger('change')
-    
-    #page.execute_script("$('.upload__hidden file-input-0').style.display = 'block';")
-    #el = page.find(:css, "input[name='file0']", :visible => false)
-    #el.send_keys(file_path)
-    #page.attach_file('file0', file_path)
-    #page.find(:css, "input[name='file0']", :visible => false).send_keys(file_path)
-    #Capybara.ignore_hidden_elements = true
-
-    #upload_dialog = webdriver.switch_to_active_element()
-    #page.find(:css, '.upload__button.file-input-button-0').send_keys(:escape)
-    
-
+    #can't implement the image upload
   
 
     # response
     expect(page).to have_content('I paid £' + main_pet_input[8])
+      # would be used for verifying image upload completed
     #expect(page).to have_selector(:css, '.upload__button.file-input-button-0.upload__button--complete', wait: 60)
 
     #page.save_screenshot('screenshot_step_19.png')
@@ -504,174 +491,6 @@ test(id: 99690, title: "End to End Complete") do
     #page.save_screenshot('screenshot_step_20.png')
     # *** STOP EDITING HERE ***
   end
-
-    step id: 21,
-      action: "Look at the Policy Options page.",
-      response: "Do you see policy option screen with prices for potential policies?" do
-
-    # *** START EDITING HERE ***
-
-    # action
-      # no action
-
-    # response
-    expect(page).to have_content('Regular')
-    expect(page).to have_content('Complete')
-    expect(page.all(:css, "div[class*='policy-order']").count).to eql(3)
-
-    #page.save_screenshot('screenshot_step_21.png')
-    # *** STOP EDITING HERE ***
-  end
-
-    step id: 22,
-      action: "View Page 'Policies for {{Main_Pet_Input.pet_name}}'. Scroll down and select the 'Show me all policies' button",
-      response: "Has the 'Show me all policies' button disappeared and are the polices all now available on the page?" do
-
-    # *** START EDITING HERE ***
-
-    # action
-    page.click_link_or_button('Show me all policies')
-     
-    # response
-    expect(page).to have_no_selector(:css, 'button', :text => 'Show me all policies')
-    expect(page).to have_content('Regular')
-    expect(page).to have_content('Complete')
-    page.all(:css, 'button', :text => 'Select', :minimum => 4)
-    
-    #page.save_screenshot('screenshot_step_22.png')
-    # *** STOP EDITING HERE ***
-  end
-
-    step id: 23,
-      action: "Look for the 'Complete' policy. Click on the option for {{Fixed_Cover.excess}}. Click Select.",
-      response: "Are you taken to a page with Personal Details Name Fields?" do
-
-    # *** START EDITING HERE ***
-
-    # action
-    within(:css, '.product-option.flow', :text => 'Complete') do
-      page.choose(fixed_cover_input[1])
-      page.click_link_or_button('Select')
-    end
-
-    # response
-    expect(page).to have_content('Personal details')
-
-
-    #page.save_screenshot('screenshot_step_23.png')
-    # *** STOP EDITING HERE ***
-  end
-
-    step id: 25,
-      action: "Click on the empty fields next to My name is and fill in the fields. For my date of birth is - select a year BEFORE 1998."\
-              " For my phone number is, enter 111{{random.phone_number}}. Select Continue",
-      response: "Do you see the policy Summary Page?" do
-
-    # *** START EDITING HERE ***
-    day = Random.rand(1...28).to_s
-    month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].sample
-    year = (2017 - Random.rand(20...58)).to_s
-    telephone = '111' + Random.rand(10000000..99999999).to_s
-
-    # action
-    within(:css, '#policy_holders_1_title') do
-      page.find(:css, '.mutt-natural-trigger').click
-    end
-    expect(page).to have_content('Title')
-    page.find(:css, 'label', :text => 'Mrs').click
-    expect(page).to have_content('My name is Mrs')
-    within(:css, '#policy_holders_1_first_name') do
-      page.find(:css, '.mutt-natural-trigger').click
-    end
-    expect(page).to have_content('First Name')
-    page.fill_in 'first_name', with: rand_fName
-    page.click_link_or_button('Done')
-    expect(page).to have_content('My name is Mrs ' + rand_fName.capitalize)
-    within(:css, '#policy_holders_1_last_name') do
-      page.find(:css, '.mutt-natural-trigger').click
-    end
-    expect(page).to have_content('Last Name')
-    page.fill_in 'last_name', with: rand_lName
-    page.click_link_or_button('Done')
-    expect(page).to have_content('My name is Mrs ' + rand_fName.capitalize + ' ' + rand_lName.capitalize)
-    within(:css, '#policy_holders_1_dob') do
-      page.find(:css, '.mutt-natural-trigger').click
-    end
-    within(:css, '#policy_holders_1_dob') do
-      page.select day, :from => 'dob-day'
-      page.select month, :from => 'dob-month'
-      page.select year, :from => 'dob-year'
-      page.click_link_or_button('Done')
-    end
-    expect(page).to have_content(month + ' ' + year)
-    within(:css, '#policy_holders_1_telephone') do
-      page.find(:css, '.mutt-natural-trigger').click
-    end
-    expect(page).to have_content('Telephone')
-    page.fill_in 'telephone', with: telephone
-    page.click_link_or_button('Done')
-    expect(page).to have_content('My phone number is ' + telephone)
-    page.click_link_or_button('Continue')
-
-    # response
-    expect(page).to have_content('Summary')
-    expect(page).to have_content(main_pet_input[1] + "'s policy")
-    
-
-    #page.save_screenshot('screenshot_step_25.png')
-    # *** STOP EDITING HERE ***
-  end
-
-
-    step id: 28,
-      action: "Scroll down. Select the policy start date as Tomorrow. Click Continue. Scroll down and click on the button for I"\
-              " agree to Terms and Conditions. Click I Agree.",
-      response: "Do you see the Payment Options screen?" do
-
-    # *** START EDITING HERE ***
-
-    # action
-    page.click_link_or_button('Tomorrow')
-    expect(page).to have_selector(:css, '.btn.btn--secondary.btn--selected', :text => 'Tomorrow')
-    page.click_link_or_button('Continue')
-    expect(page).to have_content('I agree to the terms and conditions')
-    page.find(:css, '.mutt-label').click
-    expect(page).to have_selector(:css, ".mutt-label.mutt-field-checkbox-checked")
-    page.click_link_or_button('I Agree')
-
-    # response
-    expect(page).to have_content('Payment')
-    
-
-    #page.save_screenshot('screenshot_step_28.png')
-    # *** STOP EDITING HERE ***
-  end
-
-    step id: 29,
-      action: "Select {{Monthly_Payment.method}} (this may already be selected). Scroll down and enter Account Name:"\
-              " {{Monthly_Payment.account_name}}, Account Number: {{Monthly_Payment.account_number}}, Sort Code: {{Monthly_Payment.sort_code}}."\
-              " Scroll down and click Continue and pay.",
-      response: "Did the 'We are creating your policy' page appear followed by a redirect to a page that says Check Your Email ?" do
-
-    # *** START EDITING HERE ***
-
-    # action
-    expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper', wait: 60)
-    if !page.has_selector?(:css, '.btn.btn--secondary.btn--selected', :text => 'Monthly')
-      page.click_link_or_button('Monthly')
-    end
-    page.fill_in 'direct_debit_account_name', with: monthly_pay_input[1]
-    page.fill_in 'direct_debit_account_number', with: monthly_pay_input[2]
-    page.fill_in 'direct_debit_sort_code', with: monthly_pay_input[3]
-    page.click_link_or_button('Continue and pay')
-
-    # response
-    expect(page).to have_content('We are creating your policy')
-    expect(page).to have_content('Check your email', wait: 60)
-
-    #page.save_screenshot('screenshot_step_29.png')
-    # *** STOP EDITING HERE ***
-  end
-
-  sleep(10)
 end
+
+

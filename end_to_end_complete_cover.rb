@@ -1,10 +1,12 @@
 #tester starts at 
 # https://devbymany.com/
-
+# NOTES: Chrome working with this site has an issue with the £ symbol and the number 3. This is a regional keyboard issue that I 
+# => did not solve yet.
 
 test(id: 99690, title: "End to End Complete") do
   # You can use any of the following variables in your code:
   # - []
+  # used to run Saucelabs with version 45 of Firefox. Version 50 was causing problems with some functionality
   Capybara.register_driver :sauce do |app|
     @desired_cap = {
       'platform': "Windows 7",
@@ -15,12 +17,17 @@ test(id: 99690, title: "End to End Complete") do
     }
     Capybara::Selenium::Driver.new(app,
       :browser => :remote,
-      :url => 'http://RFAutomation:5328f84f-5623-41ba-a81e-b5daff615024@ondemand.saucelabs.com:80/wd/hub',
+      :url => 'http://@ondemand.saucelabs.com:80/wd/hub',
       :desired_capabilities => @desired_cap
     )
   end
+  # chrome testing
+  Capybara.register_driver :selenium do |app|
+    Capybara::Selenium::Driver.new(app, 
+      :browser => :firefox)
+  end 
 
-  rand_num=Random.rand(899999999) + 100000000
+  
   main_pet_input_list = [['Cat','Enya','Pedigree','White Shorthair','Current Year -5','Female','Has Not','Has Not','2360','WN','Moneyback'],
                     ['Cat','Cappuccino','Cross Breed','Wiener Cat','Current Year -6','Male','Has Not','Has','2370','WR','Regular'],
                     ['Dog','Elvis','Pedigree','Aberdeen Terrier','Current Year -7','Male','Has Not','Has Not','2380','AL','Complete']]
@@ -37,17 +44,27 @@ test(id: 99690, title: "End to End Complete") do
   rand_fName = ('a'..'z').to_a.shuffle[0,8].join
   rand_lName = ('a'..'z').to_a.shuffle[0,8].join
 
-  window = Capybara.current_session.driver.browser.manage.window
-  #window.maximize
+  # embedded test shared across all BBM scripts: creates new user and quote
+  # => this can be moved into framework but for now is called here
+  embedded_test = File.open('./get_quote.rb').read
+  dsl = RainforestRubyRuntime::DSL.new(callback: @callback)
+  test = dsl.run_code(embedded_test)
+  if Test === test
+    test.run
+  else
+    raise WrongReturnValueError, test
+  end
 
+  # embedded test: get_policy above covers the following commented out section
+=begin  
   step id: 1,
-      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: '' and password: ''. Click login or OK.",
+      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: 'bbm' and password: 'bbm66m'. Click login or OK.",
       response: "Do you see the main page with the logo Bought By Many in the top left?" do
     # *** START EDITING HERE ***
 
     # action
-    visit "https://stagingbymany.com/"
-
+    #need to enter username and password
+    visit "https://XXXXXXX@stagingbymany.com/"
     # response
     expect(page).to have_selector(:css, 'span', :text => 'Bought By Many', :match => :first)
 
@@ -61,7 +78,10 @@ test(id: 99690, title: "End to End Complete") do
     # *** START EDITING HERE ***
 
     # action
-    scroll_offset = 500 
+    el = page.find(:css, '.policy:nth-child(2)')
+    page.driver.browser.execute_script("arguments[0].scrollIntoView(true);", el.native)
+    sleep(1)
+    scroll_offset = -100 
     page.execute_script("window.scrollTo(0,#{scroll_offset})")
     within(:css, '.policy:nth-child(2)') do
       page.find(:css, 'a', :text => 'Get a quote', wait: 40).click
@@ -245,10 +265,12 @@ test(id: 99690, title: "End to End Complete") do
       within(:css, '.mutt-autocomplete-dropdown__list', wait: 30) do
         expect(page).to have_content(main_pet_input[3])
       end
-      sleep(1)
+      sleep(2)
       page.find(:css, 'li', :text => main_pet_input[3], :match => :first).hover
       page.find(:css, 'li', :text => main_pet_input[3], :match => :first).click
-      expect(page).to have_no_selector(:css, 'li', :text => main_pet_input[3])
+      #if page.has_selector?(:css, 'li', :text => main_pet_input[3])
+      #  page.find(:css, 'li', :text => main_pet_input[3], :match => :first).click
+      #end
       page.click_link_or_button('Done')
     end
 
@@ -493,7 +515,8 @@ test(id: 99690, title: "End to End Complete") do
     #page.save_screenshot('screenshot_step_20.png')
     # *** STOP EDITING HERE ***
   end
-
+=end
+    # the remaineder is unique for this test case
     step id: 21,
       action: "Look at the Policy Options page.",
       response: "Do you see policy option screen with prices for potential policies?" do
@@ -519,6 +542,13 @@ test(id: 99690, title: "End to End Complete") do
     # *** START EDITING HERE ***
 
     # action
+      # scroll object into view
+    scroll_offset = 0
+    for i in 1..2 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     page.click_link_or_button('Show me all policies')
      
     # response
@@ -620,16 +650,28 @@ test(id: 99690, title: "End to End Complete") do
     # *** START EDITING HERE ***
 
     # action
+      # scroll object into view
+    scroll_offset = 0
+    for i in 1..2 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     page.click_link_or_button('Tomorrow')
     expect(page).to have_selector(:css, '.btn.btn--secondary.btn--selected', :text => 'Tomorrow')
     page.click_link_or_button('Continue')
     expect(page).to have_content('I agree to the terms and conditions')
+    for i in 1..5 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     page.find(:css, '.mutt-label').click
     expect(page).to have_selector(:css, ".mutt-label.mutt-field-checkbox-checked")
     page.click_link_or_button('I Agree')
 
     # response
-    expect(page).to have_content('Payment')
+    expect(page).to have_content('Payment', wait: 60)
     
 
     #page.save_screenshot('screenshot_step_28.png')
@@ -652,6 +694,12 @@ test(id: 99690, title: "End to End Complete") do
     page.fill_in 'direct_debit_account_name', with: monthly_pay_input[1]
     page.fill_in 'direct_debit_account_number', with: monthly_pay_input[2]
     page.fill_in 'direct_debit_sort_code', with: monthly_pay_input[3]
+    scroll_offset = 0
+    for i in 1..3 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     page.click_link_or_button('Continue and pay')
 
     # response

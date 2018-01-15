@@ -1,10 +1,12 @@
 #tester starts at 
 # https://devbymany.com/
-
+# NOTES: Chrome working with this site has an issue with the £ symbol and the number 3. This is a regional keyboard issue that I 
+# => did not solve yet.
 
 test(id: 98447, title: "Payment Test E2E CC") do
   # You can use any of the following variables in your code:
   # - []
+  # used to run Saucelabs with version 45 of Firefox. Version 50 was causing problems with some functionality
   Capybara.register_driver :sauce do |app|
     @desired_cap = {
       'platform': "Windows 7",
@@ -15,10 +17,15 @@ test(id: 98447, title: "Payment Test E2E CC") do
     }
     Capybara::Selenium::Driver.new(app,
       :browser => :remote,
-      :url => 'http://RFAutomation:5328f84f-5623-41ba-a81e-b5daff615024@ondemand.saucelabs.com:80/wd/hub',
+      :url => 'http://@ondemand.saucelabs.com:80/wd/hub',
       :desired_capabilities => @desired_cap
     )
   end
+  # chrome testing
+  Capybara.register_driver :selenium do |app|
+    Capybara::Selenium::Driver.new(app, 
+      :browser => :firefox)
+  end 
 
   rand_num=Random.rand(899999999) + 100000000
   main_pet_input_list = [['Cat','Enya','Pedigree','White Shorthair','Current Year -5','Female','Has Not','Has Not','2260','WN','Moneyback'],
@@ -37,19 +44,29 @@ test(id: 98447, title: "Payment Test E2E CC") do
   rand_fName = ('a'..'z').to_a.shuffle[0,8].join
   rand_lName = ('a'..'z').to_a.shuffle[0,8].join
 
-  #window = Capybara.current_session.driver.browser.manage.window
-  #window.maximize
+  # embedded test shared across all BBM scripts: creates new user and quote
+  # => this can be moved into framework but for now is called here
+  embedded_test = File.open('./get_quote.rb').read
+  dsl = RainforestRubyRuntime::DSL.new(callback: @callback)
+  test = dsl.run_code(embedded_test)
+  if Test === test
+    test.run
+  else
+    raise WrongReturnValueError, test
+  end
 
+  # embedded test: get_policy above covers the following commented out section
+=begin
   step id: 1,
-      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: '' and password: ''. Click login or OK.",
+      action: "If you {{Main_Pet_Input.pet_breed}} see a browser pop up asking for username and password enter username: 'bbm' and password: 'bbm66m'. Click login or OK.",
       response: "Do you see the main page with the logo Bought By Many in the top left?" do
     # *** START EDITING HERE ***
 
     # action
-    visit "https://stagingbymany.com/"
-
+    #need to enter username and password
+    visit "https://XXXXXXXX@stagingbymany.com/"
     # response
-    expect(page).to have_selector(:css, 'span', :text => 'Bought By Many', :match => :first)
+    expect(page).to have_selector(:css, 'span', :text => 'Bought y Many', :match => :first)
 
     #page.save_screenshot('screenshot_step_1.png')
     # *** STOP EDITING HERE ***
@@ -61,11 +78,10 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # *** START EDITING HERE ***
 
     # action
-      #slow
-    #el = page.find(:css, '.policy:nth-child(2)')
-    #page.driver.browser.execute_script("arguments[0].scrollIntoView(true);", el.native)
-    #puts 'here'
-    scroll_offset = 500 
+      # chrome requires object to be in view so scroll to object
+    el = page.find(:css, '.policy:nth-child(2)')
+    page.driver.browser.execute_script("arguments[0].scrollIntoView(true);", el.native)
+    scroll_offset = -100 
     page.execute_script("window.scrollTo(0,#{scroll_offset})")
     within(:css, '.policy:nth-child(2)') do
       page.find(:css, 'a', :text => 'Get a quote', wait: 40).click
@@ -87,11 +103,11 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # action
     page.fill_in 'email', with: rand_fName+'_'+rand_lName+'@nowhere.com'
     page.fill_in 'full_name', with: rand_fName + ' ' + rand_lName
-    page.click_link_or_button('Next')
+    page.click_link_or_button('Next ›')
 
     # response
     expect(page).to have_content('Your password')
-	
+  
     #page.save_screenshot('screenshot_step_3.png')
     # *** STOP EDITING HERE ***
   end
@@ -120,7 +136,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
       response: "Do you see 'I have a dog called _' on the page?" do
    
     # *** START EDITING HERE ***
-	   
+     
     # action
     within(:css, '.splash.fullheight') do
       page.find(:css, "a[class='btn']", :text => "Let's get started").click
@@ -223,7 +239,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # response
     expect(page).to have_no_content('What type of breed is it')
     expect(page).to have_no_selector(:css, 'mutt-help>h6')
-    #sleep(5)
+    # verification that field is checked not working
     #expect(page.has_checked_field?(main_pet_input[2])).to eql(true)
     
     
@@ -241,6 +257,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # *** START EDITING HERE ***
 
     # action
+      # enter breed, one character at a time to allow system to catch up with populating breed list
     within(:css, '#insured_entities_1_breed') do
       page.find(:css, '.mutt-natural-autocomplete').click
       for x in 0..main_pet_input[3].length do
@@ -249,7 +266,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
       within(:css, '.mutt-autocomplete-dropdown__list', wait: 30) do
         expect(page).to have_content(main_pet_input[3])
       end
-      sleep(1)
+      sleep(2) # system is occassionally too slow in populating breed list so this reduces liklihook of mismatch
       page.find(:css, 'li', :text => main_pet_input[3], :match => :first).hover
       page.find(:css, 'li', :text => main_pet_input[3], :match => :first).click
       expect(page).to have_no_selector(:css, 'li', :text => main_pet_input[3])
@@ -400,14 +417,16 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # *** START EDITING HERE ***
 
     # action
+      # enter pet price
     within(:css, '#insured_entities_1_value') do
       page.find(:css, '.mutt-natural-trigger').click
     end
     expect(page).to have_content('How much did you pay for your pet?')
-
     page.fill_in 'value', with: main_pet_input[8]
     page.click_link_or_button('Done')
     expect(page).to have_content('I paid £' + main_pet_input[8])
+
+    # enter pet address
     within(:css, '#insured_entities_1_pet_address_postcode') do
       page.find(:css, '.mutt-natural-trigger').click
     end
@@ -420,10 +439,12 @@ test(id: 98447, title: "Payment Test E2E CC") do
     expect(page).to have_content(main_pet_input[9])
     within(:css, '.pca', :match => :first, wait: 60) do
       expect(page).to have_content(main_pet_input[9])
+      # grab list of postal codes/suburbs and select random
       suburb_list = page.all(:css, '.pcadescription', :minimum => 2, wait: 15)
       suburb = suburb_list.sample
       suburb.hover
       suburb.click
+      # grab list of addresses and select random from first 6
       address_list = page.all(:css, "div[class*='pcaitem'][title^='#{main_pet_input[9]}']", :minimum => 1, wait: 15)
       address = address_list[0..6].sample
       address.hover
@@ -448,34 +469,18 @@ test(id: 98447, title: "Payment Test E2E CC") do
       response: "Did the photo upload and is it visible on page?" do
 
     # *** START EDITING HERE ***
-    #file_path = Dir.pwd + '/' + main_pet_input[0] + '.jpg'
 
     # action
     within(:css, '#insured_entities_1_pet_address_postcode') do
       page.click_link_or_button('Done', wait: 30)
     end
     expect(page).to have_content('I paid £' + main_pet_input[8])
-    #Capybara.ignore_hidden_elements = false
-
-    #page.execute_script("$('.upload__button.file-input-button-0').show();")
-    #page.execute_script("$('.upload__button.file-input-button-0').trigger('change');")
-    #page.find(:css, '.upload__button.file-input-button-0').trigger('change')
-    
-    #page.execute_script("$('.upload__hidden file-input-0').style.display = 'block';")
-    #el = page.find(:css, "input[name='file0']", :visible => false)
-    #el.send_keys(file_path)
-    #page.attach_file('file0', file_path)
-    #page.find(:css, "input[name='file0']", :visible => false).send_keys(file_path)
-    #Capybara.ignore_hidden_elements = true
-
-    #upload_dialog = webdriver.switch_to_active_element()
-    #page.find(:css, '.upload__button.file-input-button-0').send_keys(:escape)
-    
-
+    #can't implement the image upload
   
 
     # response
     expect(page).to have_content('I paid £' + main_pet_input[8])
+      # would be used for verifying image upload completed
     #expect(page).to have_selector(:css, '.upload__button.file-input-button-0.upload__button--complete', wait: 60)
 
     #page.save_screenshot('screenshot_step_19.png')
@@ -498,7 +503,9 @@ test(id: 98447, title: "Payment Test E2E CC") do
     #page.save_screenshot('screenshot_step_20.png')
     # *** STOP EDITING HERE ***
   end
+=end
 
+    # the remaineder is unique for this test case
     step id: 21,
       action: "Look at the Policy Options page.",
       response: "Do you see policy option screen with prices for potential policies?" do
@@ -524,8 +531,12 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # *** START EDITING HERE ***
 
     # action
-    scroll_offset = 2000 
-    page.execute_script("window.scrollTo(0,#{scroll_offset})")
+    scroll_offset = 0
+    for i in 1..2 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     page.click_link_or_button('Show me all policies')
      
     # response
@@ -580,8 +591,13 @@ test(id: 98447, title: "Payment Test E2E CC") do
         expect(page).to have_selector(:css, 'a', :text => 'Remove this option')
       end
     end
-    scroll_offset = 2000
-    page.execute_script("window.scrollTo(0,#{scroll_offset})")
+    # scroll object into view
+    scroll_offset = 0
+    for i in 1..2 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     if reg_cover_input[2] == 'Add This Option'
       within(:css, '.product-addons__item', :text => 'Travel Cover') do
         page.find(:css, 'a', :text => 'Add this option').click
@@ -719,15 +735,23 @@ test(id: 98447, title: "Payment Test E2E CC") do
     # *** START EDITING HERE ***
 
     # action
-    scroll_offset = 2000
-    page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      # scroll object into view
+    scroll_offset = 0
+    for i in 1..3 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     page.click_link_or_button('Tomorrow')
     expect(page).to have_selector(:css, '.btn.btn--secondary.btn--selected', :text => 'Tomorrow')
     page.click_link_or_button('Continue')
     expect(page).to have_content('I agree to the terms and conditions')
     scroll_offset = 0
-    scroll_offset = 2000
-    page.execute_script("window.scrollTo(0,#{scroll_offset})")
+    for i in 1..5 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     #page.find(:css, '#policy_holders_1_agree_terms-checkbox').click
     page.find(:css, '.mutt-label').click
     expect(page).to have_selector(:css, ".mutt-label.mutt-field-checkbox-checked")
@@ -754,8 +778,12 @@ test(id: 98447, title: "Payment Test E2E CC") do
     expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper')
     page.find(:css, '.btn.btn--secondary', :text => 'Yearly', wait: 60).click
     expect(page).to have_no_selector(:css, '#rotatingAnimationWrapper')
-    scroll_offset = 2000
-    page.execute_script("window.scrollTo(0,#{scroll_offset})")
+    scroll_offset = 0
+    for i in 1..3 do
+      scroll_offset += 1500 
+      page.execute_script("window.scrollTo(0,#{scroll_offset})")
+      sleep(1)
+    end
     page.find(:css, 'button', :text => 'Continue and pay', wait: 60).click
     
     within_frame(find(:css, "iframe[class='stripe_checkout_app']")) do
@@ -774,7 +802,7 @@ test(id: 98447, title: "Payment Test E2E CC") do
 
     # response
     expect(page).to have_content('We are creating your policy')
-    expect(page).to have_content('Check your email', wait: 60)
+    expect(page).to have_content('Check Your Email', wait: 60)
 
     #page.save_screenshot('screenshot_step_29.png')
     # *** STOP EDITING HERE ***
