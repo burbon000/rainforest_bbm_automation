@@ -1,9 +1,13 @@
 #tester starts at 
 # https://devbymany.com/
+# This is not an official test for Bought By Many. This script takes the first 20 common steps from the existing test cases, and 
+# => creates a separate script to test out embedded tests.
+
 # NOTES: Chrome working with this site has an issue with the £ symbol and the number 3. This is a regional keyboard issue that I 
 # => did not solve yet.
 
-test(id: 99691, title: "End to End Complete") do
+
+test(id: 0, title: "embedded test") do
   # You can use any of the following variables in your code:
   # - []
   # used to run Saucelabs with version 45 of Firefox. Version 50 was causing problems with some functionality
@@ -13,7 +17,7 @@ test(id: 99691, title: "End to End Complete") do
       'browserName': "firefox",
       'version': "45",
       'screenResolution': "1920x1080",
-      'name': "bbm_end_to_end_complete",
+      'name': "bbm_embedded_test_get_quote",
     }
     Capybara::Selenium::Driver.new(app,
       :browser => :remote,
